@@ -4,7 +4,7 @@ CLOCKWISE = True # Whether the resulting path should go clockwise or countercloc
 START_OFFSET_S = 0.1 # [0-1] position of starting line in the SVG 'raceline' spline. Not linear. [adim]ss
 
 RACELINE_POINTS_PER_METER = 20 # The resolution of the final result [pt/m]
-METERS_PER_PIXEL = 0.05 # Map resolution [m/px]
+METERS_PER_SVGUNIT = 0.05 # Map resolution [m/u]
 
 SPLINE_CONVERSION_N_SAMPLES_MUL = 2 # Multiplies RACELINE_POINTS_PER_METER when sampling the SVG path to create the raceline spline [adim]
 SPLINE_CONVERSION_SMOOTHING = 10 # Smoothing factor for the raceline spline. Minimum 0 (no smoothing) [??]
@@ -83,8 +83,8 @@ def wrap(value, min, max):
 raceline, outer, inner = get_paths(SVG_PATH)
 
 # Sample the raceline
-raceline_spline_n = math.ceil(raceline.length() * METERS_PER_PIXEL * RACELINE_POINTS_PER_METER * SPLINE_CONVERSION_N_SAMPLES_MUL)
-original_raceline_pts = sample(lambda s: raceline.point(wrap(s + START_OFFSET_S, 0, 1)), raceline_spline_n) * METERS_PER_PIXEL
+raceline_spline_n = math.ceil(raceline.length() * METERS_PER_SVGUNIT * RACELINE_POINTS_PER_METER * SPLINE_CONVERSION_N_SAMPLES_MUL)
+original_raceline_pts = sample(lambda s: raceline.point(wrap(s + START_OFFSET_S, 0, 1)), raceline_spline_n) * METERS_PER_SVGUNIT
 
 # Create a spline
 raceline_tck = points_to_spline(original_raceline_pts)
@@ -146,26 +146,26 @@ n_lefts = np.zeros(n)
 n_rights = np.zeros(n)
 
 # Just use a raycasting approach
-ray_length_pixels = RAY_LENGTH_METERS / METERS_PER_PIXEL
+ray_length_svgunits = RAY_LENGTH_METERS / METERS_PER_SVGUNIT
 for i in range(n):
-    # Convert back to pixels, as we're just using the svg library functionality for this
-    x = v2c(xs[:,i]) / METERS_PER_PIXEL
+    # Convert back to svg units, as we're just using the svg library functionality for this
+    x = v2c(xs[:,i]) / METERS_PER_SVGUNIT
     n = v2c(ns[:,i])
 
     # Shoot a ray to the left and right of the current point, and register an hit with the corresponding bound
-    n_left_px = get_closest_intersection(ray_length_pixels, left_bound.intersect(svgpathtools.Line(x, x + n * ray_length_pixels))) or ray_length_pixels
-    n_right_px = get_closest_intersection(ray_length_pixels, right_bound.intersect(svgpathtools.Line(x, x - n * ray_length_pixels))) or ray_length_pixels
+    n_left_svgu = get_closest_intersection(ray_length_svgunits, left_bound.intersect(svgpathtools.Line(x, x + n * ray_length_svgunits))) or ray_length_svgunits
+    n_right_svgu = get_closest_intersection(ray_length_svgunits, right_bound.intersect(svgpathtools.Line(x, x - n * ray_length_svgunits))) or ray_length_svgunits
 
     # Convert back to meters and store
-    n_lefts[i] = n_left_px * METERS_PER_PIXEL
-    n_rights[i] = n_right_px * METERS_PER_PIXEL
+    n_lefts[i] = n_left_svgu * METERS_PER_SVGUNIT
+    n_rights[i] = n_right_svgu * METERS_PER_SVGUNIT
 
 # Plot the boundaries for debugging
 left_projection = xs + ns * n_lefts
 right_projection = xs - ns * n_rights
 
-original_left_bound_pts = sample(lambda s: left_bound.point(wrap(s, 0, 1)), raceline_spline_n) * METERS_PER_PIXEL
-original_right_bound_pts = sample(lambda s: right_bound.point(wrap(s, 0, 1)), raceline_spline_n) * METERS_PER_PIXEL
+original_left_bound_pts = sample(lambda s: left_bound.point(wrap(s, 0, 1)), raceline_spline_n) * METERS_PER_SVGUNIT
+original_right_bound_pts = sample(lambda s: right_bound.point(wrap(s, 0, 1)), raceline_spline_n) * METERS_PER_SVGUNIT
 
 plt.figure()
 plt.plot(original_raceline_pts[0,:], original_raceline_pts[1,:], linewidth=0.5, label='Original raceline')
